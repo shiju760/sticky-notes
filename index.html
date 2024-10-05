@@ -3,282 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticky Notes Manager</title>
+    <title>Sticky Notes</title>
     <style>
         body {
-            font-family: 'Verdana', sans-serif;
-            background-color: #f0f8ff;
-            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
             padding: 20px;
-            position: relative;
-            min-height: 100vh;
         }
-
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-
-        #add-note-btn {
-            display: block;
-            margin: 20px auto;
-            padding: 8px 16px;
-            background-color: #ffeb3b;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: background-color 0.3s;
-        }
-
-        #add-note-btn:hover {
-            background-color: #fdd835;
-        }
-
-        .notes-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .sticky-note {
-            position: relative;
-            width: 160px; /* Adjusted for compactness */
-            min-height: 100px;
-            background-color: #fff176;
+        
+        .note {
+            border: 1px solid #ccc;
             padding: 10px;
-            border-radius: 10px;
-            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-            animation: fadeIn 0.5s ease-in-out;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            margin: 10px;
+            border-radius: 5px;
+            background-color: white;
+            transition: background-color 0.5s;
         }
 
-        /* 3D Pin Image Styling */
-        .sticky-note img.pin {
-            width: 30px; /* Smaller pin size */
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            transition: transform 0.3s;
-            pointer-events: none;
-        }
-
-        .sticky-note:hover img.pin {
-            transform: translateX(-50%) rotate(15deg);
-        }
-
-        /* Textarea Styling */
-        .sticky-note textarea {
-            width: 100%;
-            height: 60px; /* Fixed height for usability */
-            border: none;
-            resize: none;
-            background: transparent;
-            outline: none;
-            font-size: 14px;
-            font-family: 'Verdana', sans-serif;
-            color: #333;
-            overflow: hidden;
-        }
-
-        /* Delete Button Styling */
-        .delete-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-            color: #d32f2f;
-            transition: color 0.3s;
-        }
-
-        .delete-btn:hover {
-            color: #b71c1c;
-        }
-
-        /* Timestamp Styling */
-        .timestamp {
-            font-size: 10px;
-            color: #555;
-            text-align: right;
-            margin-top: 5px;
-        }
-
-        /* Pending Note Styling */
-        .pending {
-            background-color: #ffcccb !important; /* Light red background */
+        .pulsate {
             animation: pulsate 1s infinite;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes fadeOut {
-            from { opacity: 1; transform: scale(1); }
-            to { opacity: 0; transform: scale(0.8); }
-        }
-
         @keyframes pulsate {
-            0% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(255, 0, 0, 1); }
-            100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pinned {
+            border: 2px solid blue; /* Example styling for pinned notes */
+        }
+
+        .create-note-btn {
+            margin-bottom: 20px;
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .create-note-btn:hover {
+            background-color: #0056b3;
+        }
+
+        textarea {
+            width: 100%;
+            height: 50px;
+            resize: none;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Sticky Notes Manager</h1>
-    <button id="add-note-btn">Add Note</button>
-    <div class="notes-container" id="notes-container">
-        <!-- Sticky notes will appear here -->
-    </div>
+    <h1>Sticky Notes</h1>
+    <button class="create-note-btn">Create Note</button>
 
     <script>
-        const addNoteBtn = document.getElementById('add-note-btn');
-        const notesContainer = document.getElementById('notes-container');
+        // Function to create notes
+        function createNote() {
+            const noteContainer = document.createElement('div');
+            noteContainer.className = 'note';
 
-        // Load notes from localStorage when the page loads
-        window.onload = loadNotes;
-
-        // Add a new note when the button is clicked
-        addNoteBtn.addEventListener('click', () => {
-            createNoteElement();
-            saveNotes();
-        });
-
-        // Function to load notes from localStorage
-        function loadNotes() {
-            try {
-                const notes = JSON.parse(localStorage.getItem('stickyNotes')) || [];
-                notes.forEach(note => createNoteElement(note.id, note.content, note.timestamp));
-                console.log('Notes loaded:', notes);
-                checkPendingNotes(); // Initial check on load
-            } catch (error) {
-                console.error('Failed to load notes:', error);
-            }
-        }
-
-        // Function to save notes to localStorage
-        function saveNotes() {
-            try {
-                const notes = [];
-                document.querySelectorAll('.sticky-note').forEach(note => {
-                    const id = note.getAttribute('data-id');
-                    const content = note.querySelector('textarea').value.trim();
-                    const timestamp = parseInt(note.getAttribute('data-timestamp'), 10);
-                    if (content !== '') { // Only save non-empty notes
-                        notes.push({ id, content, timestamp });
-                    }
-                });
-                localStorage.setItem('stickyNotes', JSON.stringify(notes));
-                console.log('Notes saved:', notes);
-            } catch (error) {
-                console.error('Failed to save notes:', error);
-            }
-        }
-
-        // Function to generate a unique ID for each note
-        function generateID() {
-            return '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // Function to create a sticky note element
-        function createNoteElement(id = generateID(), content = '', timestamp = Date.now()) {
-            const note = document.createElement('div');
-            note.classList.add('sticky-note');
-            note.setAttribute('data-id', id);
-            note.setAttribute('data-timestamp', timestamp);
-
-            // 3D Pin Image
-            const pin = document.createElement('img');
-            pin.src = 'https://i.imgur.com/ZcLLrkY.png'; // Reliable 3D pin image URL
-            pin.alt = 'Paper Pin';
-            pin.classList.add('pin');
-            pin.onerror = () => {
-                console.error('Failed to load pin image.');
-                pin.style.display = 'none'; // Hide the pin if image fails to load
-            };
-            note.appendChild(pin);
-
-            // Textarea for note content
             const textarea = document.createElement('textarea');
-            textarea.placeholder = 'Add your message here';
-            textarea.value = content;
-            textarea.addEventListener('input', () => {
-                saveNotes();
-                checkPendingNotes(); // Recheck pending status on input
+            noteContainer.appendChild(textarea);
+
+            // Create a button for pinning
+            const pinButton = document.createElement('button');
+            pinButton.textContent = 'Pin';
+            pinButton.className = 'pin-btn';
+            noteContainer.appendChild(pinButton);
+
+            // Create a div for displaying the timestamp
+            const timestamp = document.createElement('div');
+            noteContainer.appendChild(timestamp);
+
+            // Get the current date and time
+            const date = new Date();
+            timestamp.textContent = `Created on: ${date.toLocaleString()}`;
+
+            document.body.appendChild(noteContainer);
+
+            // Handle pinning
+            pinButton.addEventListener('click', () => {
+                noteContainer.classList.toggle('pinned');
             });
-            note.appendChild(textarea);
 
-            // Delete button
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = '&times;';
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.addEventListener('click', () => deleteNote(note));
-            note.appendChild(deleteBtn);
+            // Save the note to local storage
+            saveNote(textarea.value, timestamp.textContent);
 
-            // Timestamp display
-            const timestampDiv = document.createElement('div');
-            timestampDiv.classList.add('timestamp');
-            timestampDiv.textContent = formatTimestamp(timestamp);
-            note.appendChild(timestampDiv);
+            // Set an interval to check the note age
+            const noteCreationTime = Date.now();
+            setInterval(() => {
+                const currentTime = Date.now();
+                const elapsed = currentTime - noteCreationTime;
 
-            notesContainer.appendChild(note);
-        }
-
-        // Function to delete a note with animation
-        function deleteNote(note) {
-            note.style.animation = 'fadeOut 0.5s forwards';
-            note.addEventListener('animationend', () => {
-                note.remove();
-                saveNotes();
-            });
-        }
-
-        // Function to format timestamp to readable date and time
-        function formatTimestamp(timestamp) {
-            const date = new Date(timestamp);
-            const options = {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
-            return date.toLocaleDateString(undefined, options);
-        }
-
-        // Function to check if notes are pending (older than 2 hours)
-        function checkPendingNotes() {
-            const now = Date.now();
-            const twoHoursInMs = 2 * 60 * 60 * 1000;
-
-            document.querySelectorAll('.sticky-note').forEach(note => {
-                const timestamp = parseInt(note.getAttribute('data-timestamp'), 10);
-                if (now - timestamp >= twoHoursInMs) {
-                    if (!note.classList.contains('pending')) {
-                        note.classList.add('pending');
-                    }
-                } else {
-                    note.classList.remove('pending');
+                if (elapsed > 7200000) { // 2 hours in milliseconds
+                    noteContainer.style.backgroundColor = 'red';
+                    noteContainer.classList.add('pulsate');
                 }
+            }, 1000); // Check every second
+        }
+
+        // Function to save notes to local storage
+        function saveNote(noteText, noteTimestamp) {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.push({ text: noteText, timestamp: noteTimestamp });
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        // Function to load notes from local storage
+        function loadNotes() {
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.forEach(note => {
+                const noteContainer = document.createElement('div');
+                noteContainer.className = 'note';
+
+                const textarea = document.createElement('textarea');
+                textarea.value = note.text; // Restore note text
+                noteContainer.appendChild(textarea);
+
+                const pinButton = document.createElement('button');
+                pinButton.textContent = 'Pin';
+                pinButton.className = 'pin-btn';
+                noteContainer.appendChild(pinButton);
+
+                // Create a div for displaying the timestamp
+                const timestamp = document.createElement('div');
+                timestamp.textContent = `Created on: ${note.timestamp}`; // Restore note timestamp
+                noteContainer.appendChild(timestamp);
+
+                document.body.appendChild(noteContainer);
+
+                // Handle pinning
+                pinButton.addEventListener('click', () => {
+                    noteContainer.classList.toggle('pinned');
+                });
+
+                // Check the elapsed time and update note color if needed
+                const noteCreationTime = new Date(note.timestamp).getTime();
+                setInterval(() => {
+                    const currentTime = Date.now();
+                    const elapsed = currentTime - noteCreationTime;
+
+                    if (elapsed > 7200000) { // 2 hours in milliseconds
+                        noteContainer.style.backgroundColor = 'red';
+                        noteContainer.classList.add('pulsate');
+                    }
+                }, 1000); // Check every second
             });
         }
 
-        // Periodically check for pending notes every minute
-        setInterval(checkPendingNotes, 60 * 1000); // 60,000 ms = 1 minute
+        // Call loadNotes when the page loads
+        window.onload = () => {
+            loadNotes();
+        };
 
+        // Add an event listener for creating a new note
+        document.querySelector('.create-note-btn').addEventListener('click', () => {
+            createNote();
+        });
     </script>
-
 </body>
 </html>
