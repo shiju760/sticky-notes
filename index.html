@@ -10,49 +10,57 @@
             background-color: #f4f4f4;
             padding: 20px;
         }
-        
-        .note {
-            border: 1px solid #ccc;
-            padding: 10px;
+
+        .sticky-note {
+            position: relative;
+            width: 250px;
+            height: 150px;
+            background-color: yellow;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px gray;
+            padding: 20px;
             margin: 10px;
-            border-radius: 5px;
-            background-color: white;
-            transition: background-color 0.5s;
+            animation: flash 1s linear infinite;
+            overflow: hidden; /* Hide overflow */
         }
 
-        .pulsate {
-            animation: pulsate 1s infinite;
-        }
-
-        @keyframes pulsate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .pinned {
-            border: 2px solid blue; /* Example styling for pinned notes */
-        }
-
-        .create-note-btn {
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background-color: #007BFF;
-            color: white;
+        .sticky-note input[type="text"] {
+            width: calc(100% - 40px);
+            height: calc(100% - 60px);
             border: none;
-            border-radius: 5px;
+            outline: none;
+            font-size: 18px;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            resize: none; /* Disable resize */
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .pin-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
             cursor: pointer;
         }
 
-        .create-note-btn:hover {
-            background-color: #0056b3;
-        }
-
-        textarea {
-            width: 100%;
-            height: 50px;
-            resize: none;
-            margin-bottom: 10px;
+        @keyframes flash {
+            0% {
+                box-shadow: 2px 2px 10px gray;
+            }
+            50% {
+                box-shadow: none;
+            }
+            100% {
+                box-shadow: 2px 2px 10px gray;
+            }
         }
     </style>
 </head>
@@ -65,9 +73,10 @@
         // Function to create notes
         function createNote() {
             const noteContainer = document.createElement('div');
-            noteContainer.className = 'note';
+            noteContainer.className = 'sticky-note';
 
             const textarea = document.createElement('textarea');
+            textarea.placeholder = 'Type your note here...';
             noteContainer.appendChild(textarea);
 
             // Create a button for pinning
@@ -78,11 +87,10 @@
 
             // Create a div for displaying the timestamp
             const timestamp = document.createElement('div');
-            noteContainer.appendChild(timestamp);
-
-            // Get the current date and time
+            timestamp.className = 'timestamp';
             const date = new Date();
             timestamp.textContent = `Created on: ${date.toLocaleString()}`;
+            noteContainer.appendChild(timestamp);
 
             document.body.appendChild(noteContainer);
 
@@ -119,10 +127,11 @@
             const notes = JSON.parse(localStorage.getItem('notes')) || [];
             notes.forEach(note => {
                 const noteContainer = document.createElement('div');
-                noteContainer.className = 'note';
+                noteContainer.className = 'sticky-note';
 
                 const textarea = document.createElement('textarea');
                 textarea.value = note.text; // Restore note text
+                textarea.placeholder = 'Type your note here...';
                 noteContainer.appendChild(textarea);
 
                 const pinButton = document.createElement('button');
@@ -130,8 +139,8 @@
                 pinButton.className = 'pin-btn';
                 noteContainer.appendChild(pinButton);
 
-                // Create a div for displaying the timestamp
                 const timestamp = document.createElement('div');
+                timestamp.className = 'timestamp';
                 timestamp.textContent = `Created on: ${note.timestamp}`; // Restore note timestamp
                 noteContainer.appendChild(timestamp);
 
