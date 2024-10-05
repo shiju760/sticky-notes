@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes Manager</title>
+    <style>
+        body {
+            font-family: 'Verdana', sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        #add-note-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 8px 16px;
+            background-color: #ffeb3b;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+
+        #add-note-btn:hover {
+            background-color: #fdd835;
+        }
+
+        .notes-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .sticky-note {
+            position: relative;
+            width: 160px; /* Adjusted for compactness */
+            min-height: 100px;
+            background-color: #fff176;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s ease-in-out;
+            overflow: hidden;
+        }
+
+        .sticky-note img.pin {
+            width: 30px; /* Smaller pin size */
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: transform 0.3s;
+            pointer-events: none;
+        }
+
+        .sticky-note:hover img.pin {
+            transform: translateX(-50%) rotate(15deg);
+        }
+
+        .sticky-note textarea {
+            width: 100%;
+            height: 60px; /* Fixed height for usability */
+            border: none;
+            resize: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+            font-family: 'Verdana', sans-serif;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #d32f2f;
+            transition: color 0.3s;
+        }
+
+        .delete-btn:hover {
+            color: #b71c1c;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.8); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sticky Notes Manager</h1>
+    <button id="add-note-btn">Add Note</button>
+    <div class="notes-container" id="notes-container">
+        <!-- Sticky notes will appear here -->
+    </div>
+
+    <script>
+        const addNoteBtn = document.getElementById('add-note-btn');
+        const notesContainer = document.getElementById('notes-container');
+
+        // Load notes from localStorage when the page loads
+        window.onload = loadNotes;
+
+        // Add a new note when the button is clicked
+        addNoteBtn.addEventListener('click', () => {
+            createNoteElement();
+            saveNotes();
+        });
+
+        // Function to load notes from localStorage
+        function loadNotes() {
+            try {
+                const notes = JSON.parse(localStorage.getItem('stickyNotes')) || [];
+                notes.forEach(note => createNoteElement(note.id, note.content));
+                console.log('Notes loaded:', notes);
+            } catch (error) {
+                console.error('Failed to load notes:', error);
+            }
+        }
+
+        // Function to save notes to localStorage
+        function saveNotes() {
+            try {
+                const notes = [];
+                document.querySelectorAll('.sticky-note').forEach(note => {
+                    const id = note.getAttribute('data-id');
+                    const content = note.querySelector('textarea').value.trim();
+                    if (content !== '') { // Only save non-empty notes
+                        notes.push({ id, content });
+                    }
+                });
+                localStorage.setItem('stickyNotes', JSON.stringify(notes));
+                console.log('Notes saved:', notes);
+            } catch (error) {
+                console.error('Failed to save notes:', error);
+            }
+        }
+
+        // Function to generate a unique ID for each note
+        function generateID() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Function to create a sticky note element
+        function createNoteElement(id = generateID(), content = '') {
+            const note = document.createElement('div');
+            note.classList.add('sticky-note');
+            note.setAttribute('data-id', id);
+
+            // 3D Pin Image
+            const pin = document.createElement('img');
+            pin.src = 'https://i.imgur.com/TgT20Rn.png'; // Ensure this URL is correct
+            pin.alt = 'Paper Pin';
+            pin.classList.add('pin');
+            pin.onerror = () => {
+                console.error('Failed to load pin image.');
+                pin.style.display = 'none'; // Hide the pin if image fails to load
+            };
+            note.appendChild(pin);
+
+            // Textarea for note content
+            const textarea = document.createElement('textarea');
+            textarea.placeholder = 'Add your message here';
+            textarea.value = content;
+            textarea.addEventListener('input', saveNotes);
+            note.appendChild(textarea);
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '&times;';
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.addEventListener('click', () => deleteNote(note));
+            note.appendChild(deleteBtn);
+
+            notesContainer.appendChild(note);
+        }
+
+        // Function to delete a note with animation
+        function deleteNote(note) {
+            note.style.animation = 'fadeOut 0.5s forwards';
+            note.addEventListener('animationend', () => {
+                note.remove();
+                saveNotes();
+            });
+        }
+    </script>
+
+</body>
+</html>
